@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- init section is always evaluated once per architecture -->
+  <trace enable="true"/>
+  <init>
+    <log text="AndroidAPITemplate init"/>
+  </init>
+
+  <androidManifestUpdates>
+    <addElements tag="application">
+
+      <activity android:name="com.isaratech.androidapi.AndroidAPITemplateActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+
+    </addElements>
+
+
+  </androidManifestUpdates>
+
+
+  <!-- optional additions to proguard -->
+  <proguardAdditions>
+    <insert>
+      <![CDATA[
+      -keepattributes Signature
+      -dontskipnonpubliclibraryclassmembers
+
+     -keepclassmembers class com.epicgames.ue4.GameActivity {
+            public <methods>;
+            public <fields>;
+     }
+    ]]>
+    </insert>
+  </proguardAdditions>
+
+  <resourceCopies>
+    <!-- Copy the generated resource file to be packaged -->
+  </resourceCopies>
+
+  <AARImports>
+  </AARImports>
+
+  <!-- optional additions to the GameActivity imports in GameActivity.java -->
+  <gameActivityImportAdditions>
+    <insert>
+
+      //https://stackoverflow.com/questions/62731065/get-media-files-and-display-in-the-list
+      //https://developer.android.google.cn/training/data-storage/shared/media?hl=en
+      import java.util.HashSet;
+      import java.util.Arrays;
+      import android.text.TextUtils;
+      import android.graphics.BitmapFactory;
+      import android.os.Handler;
+      import android.widget.Toast;
+      import android.content.Context;
+      import android.util.Log;
+      import java.util.Set;
+      import java.util.UUID;
+
+      import android.content.ComponentName;
+
+      import android.provider.MediaStore;
+      import android.provider.MediaStore.Video.Thumbnails;
+      import android.provider.DocumentsContract;
+      import java.util.concurrent.TimeUnit;
+      import android.database.Cursor;
+      import android.content.CursorLoader;
+
+      import android.content.ContentUris;
+      import android.annotation.SuppressLint;
+
+      import android.graphics.Bitmap;
+      import android.media.ThumbnailUtils;
+      import android.graphics.BitmapFactory;
+
+      import java.net.MalformedURLException;
+      import java.net.URI;
+      import java.net.URISyntaxException;
+      import java.net.URL;
+      import java.util.ArrayList;
+
+      import android.content.ComponentName;
+      import android.app.Service;
+      import android.content.Intent;
+      import android.content.ServiceConnection;
+      import android.os.IBinder;
+      import android.util.Log;
+
+    </insert>
+  </gameActivityImportAdditions>
+
+
+  <!-- optional additions to the GameActivity class in GameActivity.java -->
+  <gameActivityClassAdditions>
+    <insert>
+      <![CDATA[
+	  
+	  private static final String TAG = "NativeAndroidPlugin-";
+	  public static Context context;
+	  List<Video> videoList = new ArrayList<Video>();
+    List<Thumbnail> thumbnailList = new ArrayList<Thumbnail>();
+	  List<String> directory_list = new ArrayList<String>();
+	  String SDCardFolder;
+    ServiceConnect cnt;
+    
+    class ServiceConnect{
+        private ServiceConnection serviceConn;
+				private IBinder mServiceBinding;
+				private Context cnxt;
+        
+        public ServiceConnect(Context applicationContext) {
+					cnxt = applicationContext;
+				}
+        
+        public void initalise(){
+					serviceConn=new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                //Log.d("SERVICEREMOTE","CONNECTED");
+                mServiceBinding=service;
+            }
+            
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                //Log.d("SERVICEREMOTE","DISCONNECTED");
+                mServiceBinding=null;
+            }        
+            };
+            
+            Intent launchIntent=new Intent();
+						launchIntent.setComponent(new ComponentName("com.myhexaville.androidwebrtc","com.shivam.androidwebrtc.tutorial.HeadsetRecordService"));
+						cnxt.bindService(launchIntent, serviceConn, Context.BIND_AUTO_CREATE);
+    }
+    
+				public void destroyService(){
+					 if(serviceConn!=null) {
+							cnxt.unbindService(serviceConn);
+							serviceConn=null;
+           }
+        }
+    }
+    
+	  class Video {
+		private final Uri uri;
+		private final String name;
+		private final int duration;
+		private final int size;
+    private final long image_ID;
+		
+		public Video(Uri uri, String name, int duration, int size,long image_ID) {
+			this.uri = uri;
+			this.name = name;
+			this.duration = duration;
+			this.size = size;
+      this.image_ID = image_ID;
+			}
+		}
+		
+    class Thumbnail {
+		private final Uri uri;
+		private final String name;
+		private final int duration;
+    private final long image_ID;
+
+		public Thumbnail(Uri uri, String name, int duration,long image_ID) {
+			this.uri = uri;
+			this.name = name;
+			this.duration = duration;
+      this.image_ID = image_ID;
+			}
+		}
+		class RealPathUtil {
+			@SuppressLint("NewApi")
+			public String getRealPathFromURI_API19(Context context, Uri uri){
+				String filePath = "";
+				String wholeID = DocumentsContract.getDocumentId(uri);
+
+				// Split at colon, use second item in the array
+				String id = wholeID.split(":")[1];
+
+				String[] column = { MediaStore.Images.Media.DATA };
+
+				// where id is equal to
+				String sel = MediaStore.Images.Media._ID + "=?";
+
+				Cursor cursor = context.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+						column, sel, new String[]{ id }, null);
+
+				int columnIndex = cursor.getColumnIndex(column[0]);
+
+				if (cursor.moveToFirst()) {
+					filePath = cursor.getString(columnIndex);
+				}
+				cursor.close();
+				return filePath;
+			}
+
+
+			@SuppressLint("NewApi")
+			public String getRealPathFromURI_API11to18(Context context, Uri contentUri) {
+				String[] proj = { MediaStore.Images.Media.DATA };
+				String result = null;
+
+				CursorLoader cursorLoader = new CursorLoader(
+						context,
+						contentUri, proj, null, null, null);
+				Cursor cursor = cursorLoader.loadInBackground();
+
+				if(cursor != null){
+					int column_index =
+							cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+					cursor.moveToFirst();
+					result = cursor.getString(column_index);
+				}
+				return result;
+			}
+
+			public String getRealPathFromURI_BelowAPI11(Context context, Uri contentUri){
+				String[] proj = { MediaStore.Images.Media.DATA };
+				Cursor cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
+				int column_index
+						= cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+				cursor.moveToFirst();
+				return cursor.getString(column_index);
+			}
+		}
+		
+
+
+		public void AndroidThunkJava_AndroidAPI_ShowToast(final String toast) {
+			runOnUiThread(new Runnable() {
+				public void run() {
+					CharSequence cs = toast;
+					Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_LONG).show();
+					}
+				});
+				}
+        
+		
+	public void AndroidThunkJava_AndroidAPI_Test3(){
+        cnt = new ServiceConnect(getApplicationContext());
+        cnt.initalise();
+		}
+    
+   public void AndroidThunkJava_AndroidAPI_Test4(){
+        cnt.destroyService();
+		}
+        
+     public void AndroidThunkJava_AndroidAPI_Test2(int[] input, int selectedVideo,boolean headset){
+     /*
+					Context context = getApplicationContext();
+					//Set<String> volumeNames = MediaStore.getExternalVolumeNames(context);
+					Uri collection;
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+						collection = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL);
+					} else {
+						collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+					}
+
+					String[] projection = new String[] {
+					MediaStore.Video.Media._ID,
+					MediaStore.Video.Media.DISPLAY_NAME,
+					MediaStore.Video.Media.DURATION,
+					MediaStore.Video.Media.SIZE,
+          MediaStore.Video.Media._ID
+					};
+	
+					String selection = MediaStore.Video.Media.DURATION +
+								" >= ?";
+					String[] selectionArgs = new String[] {
+						String.valueOf(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES))};
+					String sortOrder = MediaStore.Video.Media.DISPLAY_NAME + " ASC";
+		        
+					try (Cursor cursor = getApplicationContext().getContentResolver().query(
+						collection,
+						projection,
+						selection,
+						selectionArgs,
+						sortOrder
+					)){
+						// Cache column indices.
+						int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID);
+						int nameColumn =
+								cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME);
+						int durationColumn =
+								cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION);
+						int sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE);
+            int imageIDColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID);
+            
+         
+						while (cursor.moveToNext()) {
+							// Get values of columns for a given video.
+							long id = cursor.getLong(idColumn);
+							String name = cursor.getString(nameColumn);
+							int duration = cursor.getInt(durationColumn);
+							int size = cursor.getInt(sizeColumn);
+              long imageID = cursor.getLong(imageIDColumn);
+
+							Uri contentUri = ContentUris.withAppendedId(
+									MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id);
+
+							// Stores column values and the contentUri in a local object
+							// that represents the media file.
+							thumbnailList.add(new Thumbnail(contentUri, name, duration,imageID));
+              
+					}
+			}
+    */
+    try {
+			Bitmap bitmap;
+			if (headset){    
+				bitmap = MediaStore.Video.Thumbnails.getThumbnail(getContentResolver(),videoList.get(selectedVideo).image_ID,MediaStore.Video.Thumbnails.MICRO_KIND,(BitmapFactory.Options)null);
+			 }
+			 else{
+				bitmap = MediaStore.Video.Thumbnails.getThumbnail(getContentResolver(),videoList.get(selectedVideo).image_ID,MediaStore.Video.Thumbnails.MINI_KIND,(BitmapFactory.Options)null);
+			} 
+    
+				if (bitmap != null){
+					//AndroidThunkJava_AndroidAPI_ShowToast("SOMETHING THERE! ");
+        
+					int new_width = bitmap.getWidth();
+					int new_height = bitmap.getHeight();
+        
+					int[] store =  new int[new_width * new_height];
+
+					bitmap.getPixels(store,0,new_width,0,0,new_width,new_height);
+        
+					input[0] = new_width;
+					input[1] = new_height;
+        
+     
+					for (int i = 0;i < store.length; i++){
+						 input[i+2] = store[i];  
+					} 
+        
+     }
+     }
+     catch(Exception e){
+					AndroidThunkJava_AndroidAPI_ShowToast("Video Thumbnail Error - Please Contact Support");
+          
+          Bitmap.Config conf = Bitmap.Config.ARGB_8888; // see other conf types
+					Bitmap bmp = Bitmap.createBitmap(300, 300, conf); // this creates a MUTABLE bitmap
+          
+          int width = 300;
+          int height = 300;
+          
+          int[] store =  new int[width * height];
+
+          input[0] = 300;
+          input[1] = 300;    
+          
+          bmp.getPixels(store,0,width,0,0,width,height);
+          
+          for (int i = 0;i < store.length; i++){
+						 input[i+2] = store[i];  
+					} 
+     }
+     /*
+      else{
+				//AndroidThunkJava_AndroidAPI_ShowToast("NULL VALUE");
+			}
+      */
+     }
+				
+		
+		]]>
+    </insert>
+  </gameActivityClassAdditions>
+
+  <!-- optional additions to GameActivity ReadMETADATA metadata reading in GameActivity.java -->
+  <gameActivityReadMetadataAdditions>
+    <insert>
+
+    </insert>
+  </gameActivityReadMetadataAdditions>
+
+  <!-- optional additions to GameActivity onCreate in GameActivity.java -->
+  <gameActivityOnCreateAdditions>
+    <insert>
+      <![CDATA[
+		]]>
+    </insert>
+  </gameActivityOnCreateAdditions>
+
+  <!-- optional additions to GameActivity onDestroy in GameActivity.java -->
+  <gameActivityOnDestroyAdditions>
+    <insert>
+
+    </insert>
+  </gameActivityOnDestroyAdditions>
+
+
+  <!-- optional additions to GameActivity onStart in GameActivity.java -->
+  <gameActivityOnStartAdditions>
+    <insert>
+
+    </insert>
+  </gameActivityOnStartAdditions>
+
+  <!-- optional additions to GameActivity onStop in GameActivity.java -->
+  <gameActivityOnStopAdditions>
+    <insert>
+
+    </insert>
+  </gameActivityOnStopAdditions>
+
+
+  <!-- optional additions to GameActivity onPause in GameActivity.java	-->
+  <gameActivityOnPauseAdditions>
+    <insert>
+      <![CDATA[
+    ]]>
+    </insert>
+  </gameActivityOnPauseAdditions>
+
+
+  <!-- optional additions to GameActivity onResume in GameActivity.java	-->
+  <gameActivityOnResumeAdditions>
+    <insert>
+    </insert>
+  </gameActivityOnResumeAdditions>
+
+
+  <!-- optional additions to GameActivity onActivityResult in GameActivity.java -->
+  <gameActivityOnActivityResultAdditions>
+    <insert>
+    </insert>
+  </gameActivityOnActivityResultAdditions>
+
+
+  <!-- optional libraries to load in GameActivity.java before libUE4.so -->
+  <soLoadLibrary>
+    <!-- need this if plugin enabled and supported architecture, even if not packaged for GearVR -->
+  </soLoadLibrary>
+</root>
