@@ -15,13 +15,16 @@ class ANDROIDSERVICE_API UBaseInstance : public UGameInstance
 	GENERATED_BODY()
 
 public:
-UFUNCTION(BlueprintCallable)
-	void ShowToast(const FString& Content);
+	UFUNCTION(BlueprintCallable)
+		void ShowToast(const FString& Content);
 
-UFUNCTION(BlueprintCallable)
-	void InitaliseWebRTC();
+	UFUNCTION(BlueprintCallable)
+		void InitaliseWebRTC();
 
-UFUNCTION(BlueprintCallable)
-	void DestroyWebRTC();
+	UFUNCTION(BlueprintCallable)
+		void DestroyWebRTC();
+
+	UFUNCTION(BlueprintCallable)
+		FString GetDeviceIpAddress();
 
 };
