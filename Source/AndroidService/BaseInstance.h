@@ -17,5 +17,11 @@ class ANDROIDSERVICE_API UBaseInstance : public UGameInstance
 public:
 UFUNCTION(BlueprintCallable)
 	void ShowToast(const FString& Content);
-	
+
+UFUNCTION(BlueprintCallable)
+	void InitaliseWebRTC();
+
+UFUNCTION(BlueprintCallable)
+	void DestroyWebRTC();
+
 };
