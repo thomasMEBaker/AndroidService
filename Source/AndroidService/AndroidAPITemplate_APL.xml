@@ -134,6 +134,8 @@
            }
         }
     }
+    
+
    
    
 		public void AndroidAPI_ShowToast(final String toast) {
@@ -145,18 +147,17 @@
 				});
 				}
         
+
 		
-	public AndroidAPI_InitService(){
+	public void AndroidAPI_InitService(){
         cnt = new ServiceConnect(getApplicationContext());
         cnt.initalise();
 		}
     
    public void AndroidAPI_DestroyService(){
         cnt.destroyService();
-		}
-     }
-				
-		
+		}          
+    
 		]]>
     </insert>
   </gameActivityClassAdditions>
