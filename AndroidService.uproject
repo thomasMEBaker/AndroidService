@@ -32,6 +32,10 @@
 		{
 			"Name": "OnlineSubsystemPico",
 			"Enabled": false
+		},
+		{
+			"Name": "WebBrowserWidget",
+			"Enabled": true
 		}
 	]
 }
